@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Leak Checker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* filter: brightness(70%) blur(5px); */
+            z-index: -1;
+        }
+
+        main {
+            max-width: 600px;
+            background-color: #040503;
+            padding: 50px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 1em;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #fff;
+            margin: 0;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #d6d0d0;
+            transition: color 0.5s ease-in-out;
+        }
+
+        #result.leaked {
+            color: red;
+        }
+
+        #result.secure {
+            color: green;
+        }
+    </style>
+
+</head>
+
+<body>
+    <video autoplay muted loop>
+        <source src="{{ url_for('static', filename='video123.mp4') }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <main>
+        <header>
+            <h1>Password Leak Checker</h1>
+        </header>
+        <p>Enter your password to check if it has been leaked:</p>
+        <input type="password" id="passwordInput" placeholder="Enter your password">
+        <button onclick="checkPassword()">Check Password</button>
+        <div id="result"></div>
+    </main>
+
+    <script>
+        async function checkPassword() {
+            const password = document.getElementById('passwordInput').value;
+
+            try {
+                const response = await fetch('/check_password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password: password }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                const count = data.count;
+
+                const resultElement = document.getElementById('result');
+                resultElement.innerHTML = `Password "${password}" was found ${count} times.`;
+
+                // Remove existing classes before adding new ones
+                resultElement.classList.remove('leaked', 'secure');
+                setTimeout(() => {
+                    if (count > 0) {
+                        resultElement.innerHTML = `<span style="color: red;">&#9888;</span> Password is leaked! Change it immediately.`;
+                        resultElement.classList.add('leaked');
+                    } else {
+                        resultElement.innerHTML = `<span style="color: green;">&#10004;</span> Password is secure.`;
+                        resultElement.classList.add('secure');
+                    }
+                }, 1000);
+            } catch (error) {
+                console.error('Error checking password:', error);
+                alert('Error checking password. Please try again.');
+            }
+        }
+    </script>
+</body>
+
+</html>
